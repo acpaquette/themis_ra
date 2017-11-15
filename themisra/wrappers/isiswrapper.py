@@ -69,4 +69,4 @@ def campt_header(outcube):
         elif j == 2:
             #Lower Right Corner Pixel
             startlocaltime = g[1]['LocalSolarTime'].value
-return incidence, stoplocaltime, startlocaltime
+    return incidence, stoplocaltime, startlocaltime

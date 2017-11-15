@@ -48,4 +48,4 @@ def themis_davinci(inpath, outpath, deplaid=False, uddw=False, tesatm=False, rti
     except ProcessError as e:
         logger.error(e.stdout)
         logger.error(e.stderr)
-return outpath
+    return outpath
