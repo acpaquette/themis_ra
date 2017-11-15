@@ -30,7 +30,6 @@ from themisra.wrappers import pipelinewrapper, isiswrapper
 
 #Constants
 instrumentmap = {'THERMAL EMISSION IMAGING SYSTEM':'THEMIS'}  #Mapping of instrument names as stored in the header to short names
-processingpipelines = {'themis_davinci':pipelinewrapper.themis_davinci}
 
 
 #Get MPI to abort cleanly in the case of an error
@@ -63,6 +62,7 @@ def main():
 
         # ISIS preprocessing
         processing.preprocessimage(job, workingpath, job['images'])
+        processing.processimage(job,workingpath,job['images'])
 
 
 if __name__ == '__main__':
