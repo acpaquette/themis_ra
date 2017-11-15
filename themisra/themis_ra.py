@@ -15,7 +15,7 @@ import plio.utils
 from plio.utils import log
 from plio.utils.utils import check_file_exists, find_in_dict
 
-import themisra.utils.utils as util
+import themisra.processing.processing as processing
 
 from themisra.wrappers import pipelinewrapper, isiswrapper
 #import gdal
@@ -62,7 +62,7 @@ def main():
         parameters = {}
 
         # ISIS preprocessing
-        util.preprocessimage(job, workingpath, job['images'])
+        processing.preprocessimage(job, workingpath, job['images'])
 
 
 if __name__ == '__main__':
