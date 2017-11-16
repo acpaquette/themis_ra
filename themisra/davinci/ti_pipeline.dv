@@ -1,0 +1,142 @@
+#!/usgs/apps/davinci/current/bin/davinci -f -v0
+#debug=1
+#insmod("isis3")
+
+f_uddw = atoi($1)
+f_tesatm = atoi($2)
+f_ndeplaid = atoi($3)
+f_rtilt = atoi($4)
+f_force = atoi($5)
+radimage = $6
+outputname = $7
+
+#verbose = 0
+
+#printf('UDDW ' + uddw_arg + '\n')
+#printf('TES ' + tesatm_arg + '\n')
+#printf('DEP ' + deplaid_arg + '\n')
+#printf('Til ' + rtilt_arg + '\n')
+#printf('FRC ' + force_arg + '\n')
+#printf('IN ' + radimage + '\n')
+#printf('OUT ' + outputname + '\n')
+#printf('DONE\n')
+
+rad = load_pds(radimage)
+band_bin=rad.spectral_qube.band_bin.band_bin_band_number
+rad=thm.unscale(rad)
+
+
+#f_uddw = 0
+#f_tesatm = 0
+#f_ndeplaid = 0
+#f_rtilt = 0
+
+if (f_uddw==0 && f_tesatm==0 && f_ndeplaid==0 && f_rtilt==0) {
+    printf("All ZEROS")
+    image = rad3tb(rad, band_bin)
+}
+if (f_uddw==1 && f_tesatm==0 && f_ndeplaid==0 && f_rtilt==0) {
+    a=uddw(radimage, geom=0, atm=0, force=0, http=0)
+    rad=a
+    image = rad3tb(rad, band_bin)
+}
+
+if (f_uddw==0 && f_tesatm==0 && f_ndeplaid==1 && f_rtilt==0) {
+    d=night_deplaid(rad)
+    rad=d
+    image = rad3tb(rad, band_bin)
+}
+
+if (f_uddw==0 && f_tesatm==0 && f_ndeplaid==0 && f_rtilt==1) {
+    r=rtilt(data=radimage, ignore=-32768)
+    rad=r
+    image = rad3tb(rad, band_bin)
+}
+
+if (f_uddw==1 && f_tesatm==1 && f_ndeplaid==0 && f_rtilt==0) {
+    #Shouldn't this be force = f_force?  What is http?
+    a=uddw(radimage, geom=0, atm=1, force=1, http=0)
+    rad=a
+    image = rad3tb(rad, band_bin)
+}
+
+if (f_uddw==1 && f_tesatm==0 && f_ndeplaid==1 && f_rtilt==0) {
+    a=uddw(radimage, geom=0, atm=0, force=0, http=0)
+    d=night_deplaid(a)
+    rad=d
+    image = rad3tb(rad, band_bin)
+}
+
+if (f_uddw==1 && f_tesatm==0 && f_ndeplaid==0 && f_rtilt==1) {
+    a=uddw(radimage, geom=0, atm=0, force=0, http=0)
+    r=rtilt(data=a, ignore=-32768)
+    rad=r
+    image = rad3tb(rad, band_bin)
+}
+
+if (f_uddw==0 && f_tesatm==0 && f_ndeplaid==1 && f_rtilt==1) {
+    r=rtilt(data=radimage, ignore=-32768)
+    d=night_deplaid(r)
+    rad=d
+    image = rad3tb(rad, band_bin)
+}
+
+if (f_uddw==1 && f_tesatm==1 && f_ndeplaid==1 && f_rtilt==0) {
+    a=uddw(radimage, geom=0, atm=1, force=1, http=0)
+    d=night_deplaid(a)
+    rad=d
+    image = rad3tb(rad, band_bin)
+}
+
+if (f_uddw==1 && f_tesatm==1 && f_ndeplaid==0 && f_rtilt==1) {
+    printf("All except ndeplaid")
+    a=uddw(radimage, geom=0, atm=1, force=1, http=0)
+    r=rtilt(data=a, ignore=-32768)
+    rad=r
+    image = rad3tb(rad, band_bin)
+}
+
+if (f_uddw==1 && f_tesatm==0 && f_ndeplaid==1 && f_rtilt==1) {
+    a=uddw(radimage, geom=0, atm=0, force=0, http=0)
+    r=rtilt(data=a, ignore=-32768)
+    d=night_deplaid(r)
+    rad=d
+    image = rad3tb(rad, band_bin)
+}
+
+if (f_uddw==1 && f_tesatm==1 && f_ndeplaid==1 && f_rtilt==1) {
+    a=uddw(radimage, geom=0, atm=1, force=1, http=0)
+    r=rtilt(data=a, ignore=-32768)
+    d=night_deplaid(r)
+    rad=d
+    image = rad3tb(rad, band_bin)
+    printf('ALL ONES')
+}
+
+#if (uddw_arg==1 && tesatm_arg==1 && deplaid_arg==1 && rtilt_arg==1) {
+#    data=uddw(inputimage, geom=0, atm=1, force=1, http=0)
+#    data=rtilt(data=data, ignore=-32768)
+#    data=night_deplaid(data)
+#    #Add the uddw, rtilt, night_deplaid data to the cube
+#    work.cube = data
+#    image = rad3tb(work.cube.data, work.spectral_qube.band_bin.band_bin_band_number)
+#    }
+#
+#
+#if (uddw_arg==0 && tesatm_arg==0 && deplaid_arg==1 && rtilt_arg==1){
+#    printf('Computing RTilt\n')
+#    data = rtilt(data=data, ignore=-32768)
+#    printf('Applying Deplaid\n')
+#    data = night_deplaid(data)
+#    printf('Radiance to Temperature\n')
+#    work.data = data
+    
+    #image = rad3tb(work.data, work.spectral_qube.band_bin.band_bin_band_number)
+#}
+
+image[where image<=0]=0
+printf("themis_to_isis3")
+cub = themis_to_isis3(radimage)
+cub.cube=image
+write(cub, outputname, type=isis3, force=1)
+#printf('Write complete')
