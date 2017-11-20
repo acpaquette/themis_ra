@@ -1,6 +1,7 @@
 import os
 import logging
 import operator as op
+import sys
 
 from mpi4py import MPI
 
@@ -17,6 +18,13 @@ from themisra.wrappers import pipelinewrapper, isiswrapper
 
 #constants
 processingpipelines = {'themis_davinci':pipelinewrapper.themis_davinci}
+
+
+sys_excepthook = sys.excepthook
+def mpi_excepthook(v, t, tb):
+    sys_excepthook(v, t, tb)
+    MPI.COMM_WORLD.Abort(1)
+sys.excepthook = mpi_excepthook
 
 def process_header(job):
     """
@@ -147,7 +155,6 @@ def processimage(job, workingpath, parameters):
     #if job is None:
         #MPI.COMM_WORLD.Abort(1)
 
-
     #Convert to ISIS
     #Read from preprocessed image
     incidence, _, _ = isiswrapper.campt_header(dpp_image)
@@ -167,10 +174,14 @@ def processimage(job, workingpath, parameters):
 
     #Process temperature data using some pipeline
     #try:
-    dvcube = processingpipelines[job['processing_pipeline']](image, workingpath, deplaid,
-                                     job['uddw'], job['tesatm'], job['rtilt'], job['force'])
+    
+    dvcube = processingpipelines[job['processing_pipeline']](image, workingpath, deplaid, 
+                                                             job['uddw'], job['tesatm'], 
+                                                             job['rtilt'], job['force'])
+
     #except:
     #    logger.error("Unknown processing pipeline: {}".format(job['processing_pipeline']))
 
+    isiscube = isiswrapper.postprocess_for_davinci(dvcube)
 
-    return dvcube, parameters
+    return isiscube
