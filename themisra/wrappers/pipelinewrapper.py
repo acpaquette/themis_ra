@@ -44,7 +44,6 @@ def themis_davinci(inpath, outpath, deplaid=False, uddw=False, tesatm=False, rti
                                             int(deplaid), int(rtilt), int(force),
                                             inpath, outpath)
     cmd = cmd.split()
-    print(cmd)
     try:
         response = subprocess.check_output(cmd, shell=False)
         logger.debug(response)
