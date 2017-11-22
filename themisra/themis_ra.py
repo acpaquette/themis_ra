@@ -2,7 +2,7 @@ import glob
 import logging
 import os
 #import re
-#import subprocess
+import subprocess
 import sys
 import time
 
@@ -33,7 +33,7 @@ instrumentmap = {'THERMAL EMISSION IMAGING SYSTEM':'THEMIS'}  #Mapping of instru
 
 
 #Get MPI to abort cleanly in the case of an error
-#sys_excepthook = sys.excepthook
+sys_excepthook = sys.excepthook
 def mpi_excepthook(v, t, tb):
     sys_excepthook(v, t, tb)
     MPI.COMM_WORLD.Abort(1)
@@ -61,8 +61,10 @@ def main():
         parameters = {}
 
         # ISIS preprocessing
-        processing.preprocessimage(job, workingpath, job['images'])
-        processing.processimage(job,workingpath,job['images'])
+        processing.preprocessimage(job, workingpath, parameters)
+        
+        # DaVinci processing
+        processing.processimage(job,workingpath, parameters)
 
 
 if __name__ == '__main__':
