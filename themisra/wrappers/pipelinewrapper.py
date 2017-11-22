@@ -37,13 +37,7 @@ def themis_davinci(inpath, outpath, deplaid=False, uddw=False, tesatm=False, rti
     fpath = os.path.join(fpath, 'ti_pipeline.dv')
     basepath, fname = os.path.split(inpath)
     outname, ext = os.path.splitext(fname)
-<<<<<<< HEAD
     outpath = os.path.join(outpath, outname) + '_dvprocessed'
-=======
-    outpath = os.path.join(outpath, outname) + '_dvprocessed.cub'
-    print(inpath)
-    print(outpath)
->>>>>>> 99d9072311f7f42e06cc36df50a917c11e5ddc62
     cmd = r'{} {} {} {} {} {} {} {}'.format(fpath, int(uddw), int(tesatm),
                                             int(deplaid), int(rtilt), int(force),
                                             inpath, outpath)
