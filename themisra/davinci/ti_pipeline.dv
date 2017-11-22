@@ -136,7 +136,9 @@ if (f_uddw==1 && f_tesatm==1 && f_ndeplaid==1 && f_rtilt==1) {
 
 image[where image<=0]=0
 printf("themis_to_isis3")
-cub = themis_to_isis3(radimage)
-cub.cube=image
-write(cub, outputname, type=isis3, force=1)
-#printf('Write complete')
+cub1 = themis_to_isis3(radimage)
+cub1.cube=image
+cub2 = themis_to_isis3(radimage)
+cub2.cube=rad
+write(cub1, outputname + "_temp.cub", type=isis3, force=1)
+write(cub2, outputname + "_rad.cub", type=isis3, force=1)
