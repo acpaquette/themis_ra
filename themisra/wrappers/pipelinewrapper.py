@@ -38,13 +38,15 @@ def themis_davinci(inpath, outpath, deplaid=False, uddw=False, tesatm=False, rti
     basepath, fname = os.path.split(inpath)
     outname, ext = os.path.splitext(fname)
     outpath = os.path.join(outpath, outname) + '_dvprocessed.cub'
+    print(inpath)
+    print(outpath)
     cmd = r'{} {} {} {} {} {} {} {}'.format(fpath, int(uddw), int(tesatm),
                                             int(deplaid), int(rtilt), int(force),
                                             inpath, outpath)
     cmd = cmd.split()
     try:
         response = subprocess.check_output(cmd, shell=False)
-        #logger.debug(response)
+        logger.debug(response)
     except ProcessError as e:
         logger.error(e.stdout)
         logger.error(e.stderr)
