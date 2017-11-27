@@ -54,18 +54,15 @@ def main():
             sys.exit()
         logger.info("Processing using {} cores".format(comm.size))
         job = io_json.read_json(sys.argv[1])
-
+        
         #Create a temporary working directory
         workingpath = plio.utils.utils.create_dir(basedir=job['workingdir'])
-        # Storage for image / observation parameters
-        parameters = {}
 
         # ISIS preprocessing
-        processing.preprocessimage(job, workingpath, parameters)
+        processing.preprocessimage(job, workingpath)
         
         # DaVinci processing
-        processing.processimage(job,workingpath, parameters)
-
+        isistemp, isisrad = processing.processimage(job,workingpath)
 
 if __name__ == '__main__':
     main()
