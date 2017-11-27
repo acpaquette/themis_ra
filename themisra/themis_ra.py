@@ -63,6 +63,7 @@ def main():
         
         # DaVinci processing
         isistemp, isisrad = processing.processimage(job,workingpath)
+        processing.mapancillary(isistemp, job)
 
 if __name__ == '__main__':
     main()

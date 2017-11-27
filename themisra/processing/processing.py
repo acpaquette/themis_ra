@@ -182,3 +182,48 @@ def processimage(job, workingpath):
     isisrad =  isiswrapper.postprocess_for_davinci(dvcube + '_rad.cub')
     
     return isistemp, isisrad
+    
+
+def mapancillary(isiscube, job):
+    comm = MPI.COMM_WORLD
+    rank = comm.rank
+    basepath, _ = os.path.split(isiscube)
+    workingpath = basepath
+    parameters = util.extract_metadata(isiscube, dict())
+
+    if rank == 0:
+        temperature = util.extract_temperature(isiscube)
+        if temperature is None:
+            logger.error('Failed to extract temperature data.')
+            MPI.COMM_WORLD.Abort(1)
+
+        if "reference" not in job.keys():
+            shape =  list(temperature.raster_size)[::-1]
+            reference_dataset = temperature
+            reference_name = "temperature"
+        else:
+            in_ref = job["ancillarydata"][job["reference"]]
+
+            # Resample the input reference to the requested resolution
+            if "reference_resolution" in job.keys():
+                out_ref = os.path.join(workingpath, os.path.splitext(in_ref)[0] + 'resampled.tif')
+                xres, yres = job["reference_resolution"]
+                opts = gdal.TranslateOptions(xRes=xres, yRes=yres)
+                gdal.Translate(out_ref, in_ref, options=opts)
+                in_ref = out_ref
+
+            reference_dataset = io_gdal.GeoDataset(in_ref)
+            reference_name = job["reference"]
+            # Get the temperature set to the correct size as well as spatial resolution.
+            shape = list(reference_dataset.raster_size)[::-1]
+            lower, upper = reference_dataset.latlon_extent
+            # Update the start and stop latitudes
+            parameters['startlatitude'] = lower[0]
+            parameters['stoplatitude'] = upper[0]
+            clipped = os.path.join(workingpath, os.path.splitext(isiscube)[0] + '_clipped.tif')
+            io_gdal.match_rasters(reference_dataset, temperature, clipped,
+                                  ndv=temperature.no_data_value)
+            temperature = util.extract_temperature(clipped)
+
+        # Extract the ancillary data
+        ancillarydata = util.extract_ancillary_data(job, temperature, parameters, workingpath, shape, reference_dataset)
