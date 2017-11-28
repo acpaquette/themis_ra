@@ -1,0 +1,6 @@
+mpi4py
+numpy
+plio
+pvl
+pysis
+scipy
