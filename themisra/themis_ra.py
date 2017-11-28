@@ -45,14 +45,14 @@ def main():
         job = io_json.read_json(sys.argv[1])
         
         #Create a temporary working directory
-        workingpath = plio.utils.utils.create_dir(basedir=job['workingdir'])
+        working_path = plio.utils.utils.create_dir(basedir=job['workingdir'])
 
         # ISIS preprocessing
-        processing.preprocessimage(job, workingpath)
+        processing.preprocess_image(job, working_path)
         
         # DaVinci processing
-        isistemp, isisrad = processing.processimage(job,workingpath)
-        processing.mapancillary(isistemp, job)
+        isistemp, isisrad = processing.process_image(job,working_path)
+        processing.map_ancillary(isistemp, job)
 
 if __name__ == '__main__':
     main()

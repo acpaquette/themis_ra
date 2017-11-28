@@ -64,7 +64,7 @@ def process_header(job):
 
     return job
 
-def preprocessimage(job, workingpath):
+def preprocess_image(job, workingpath):
     """
     Preprocess a THEMIS EDR for Davinci using ISIS and write files into the
     workingpath.
@@ -108,7 +108,7 @@ def preprocessimage(job, workingpath):
     return outcube
 
 
-def processimage(job, workingpath):
+def process_image(job, workingpath):
     """
     Process a THEMIS EDR using ISIS and Davinci to a level 2 map projected
     product. putting the output and intermediary files into the workingpath.
@@ -184,7 +184,25 @@ def processimage(job, workingpath):
     return isistemp, isisrad
     
 
-def mapancillary(isiscube, job):
+def map_ancillary(isiscube, job):
+    """
+    Given the input image and job instructions, clip the associated ancillary
+    data to the extents of the input image and write it to file.
+
+    Parameters
+    ----------
+    isiscube : str
+          The fully qualified path to the reference image
+    job : dict
+          Containing the PATH to an images
+
+    Returns
+    -------
+    ancillary_data: dict
+          With updated values of ancillary data
+
+    """
+
     comm = MPI.COMM_WORLD
     rank = comm.rank
     basepath, _ = os.path.split(isiscube)
@@ -226,4 +244,6 @@ def mapancillary(isiscube, job):
             temperature = util.extract_temperature(clipped)
 
         # Extract the ancillary data
-        ancillarydata = util.extract_ancillary_data(job, temperature, parameters, workingpath, shape, reference_dataset)
+        ancillary_data = util.extract_ancillary_data(job, temperature, parameters, workingpath, shape, reference_dataset)
+
+        return ancillary_data
