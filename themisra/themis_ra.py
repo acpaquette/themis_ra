@@ -43,6 +43,9 @@ sys.excepthook = mpi_excepthook
 #log.setup_logging(level=config.LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
+def cost(temp):
+    print()
+
 def main():
     comm = MPI.COMM_WORLD
     rank = comm.rank
@@ -57,15 +60,16 @@ def main():
 
         #Create a temporary working directory
         workingpath = plio.utils.utils.create_dir(basedir=job['workingdir'])
+        basepath, fname = os.path.split(job["images"])
+        fname, _ = fname, _ = os.path.splitext(fname)
         # Storage for image / observation parameters
         parameters = {}
 
         # ISIS preprocessing
         processing.preprocessimage(job, workingpath, parameters)
-        
+
         # DaVinci processing
         processing.processimage(job,workingpath, parameters)
-
 
 if __name__ == '__main__':
     main()

@@ -135,7 +135,7 @@ def processimage(job, workingpath, parameters):
                     The image stop time
     """
 
-    
+
 
     # path to the original image (no preprocessing)
     image = job['images']
@@ -174,14 +174,13 @@ def processimage(job, workingpath, parameters):
 
     #Process temperature data using some pipeline
     #try:
-    
-    dvcube = processingpipelines[job['processing_pipeline']](image, workingpath, deplaid, 
-                                                             job['uddw'], job['tesatm'], 
+    dvcube = processingpipelines[job['processing_pipeline']](image, workingpath, deplaid,
+                                                             job['uddw'], job['tesatm'],
                                                              job['rtilt'], job['force'])
-
+                                                             
     #except:
     #    logger.error("Unknown processing pipeline: {}".format(job['processing_pipeline']))
 
-    isiscube = isiswrapper.postprocess_for_davinci(dvcube)
+    isiscube = isiswrapper.postprocess_for_davinci(dvcube + '_temp')
 
     return isiscube
