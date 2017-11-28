@@ -1,12 +1,10 @@
 import glob
 import logging
 import os
-#import re
 import subprocess
 import sys
 import time
 
-#import numpy as np
 from mpi4py import MPI
 
 from plio.io import io_gdal, io_hdf, io_json
@@ -18,15 +16,6 @@ from plio.utils.utils import check_file_exists, find_in_dict
 import themisra.processing.processing as processing
 
 from themisra.wrappers import pipelinewrapper, isiswrapper
-#import gdal
-
-#import pysis
-#import pvl
-
-#from krc.wrappers import pipelinewrapper, isiswrapper
-#from krc.utils import utils
-#from krc.interpolation import interpolator as interp
-#from krc import config
 
 #Constants
 instrumentmap = {'THERMAL EMISSION IMAGING SYSTEM':'THEMIS'}  #Mapping of instrument names as stored in the header to short names
