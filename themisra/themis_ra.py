@@ -1,12 +1,10 @@
 import glob
 import logging
 import os
-#import re
 import subprocess
 import sys
 import time
 
-#import numpy as np
 from mpi4py import MPI
 
 from plio.io import io_gdal, io_hdf, io_json
@@ -18,15 +16,6 @@ from plio.utils.utils import check_file_exists, find_in_dict
 import themisra.processing.processing as processing
 
 from themisra.wrappers import pipelinewrapper, isiswrapper
-#import gdal
-
-#import pysis
-#import pvl
-
-#from krc.wrappers import pipelinewrapper, isiswrapper
-#from krc.utils import utils
-#from krc.interpolation import interpolator as interp
-#from krc import config
 
 #Constants
 instrumentmap = {'THERMAL EMISSION IMAGING SYSTEM':'THEMIS'}  #Mapping of instrument names as stored in the header to short names
@@ -56,13 +45,14 @@ def main():
         job = io_json.read_json(sys.argv[1])
         
         #Create a temporary working directory
-        workingpath = plio.utils.utils.create_dir(basedir=job['workingdir'])
+        working_path = plio.utils.utils.create_dir(basedir=job['workingdir'])
 
         # ISIS preprocessing
-        processing.preprocessimage(job, workingpath)
+        processing.preprocess_image(job, working_path)
         
         # DaVinci processing
-        isistemp, isisrad = processing.processimage(job,workingpath)
+        isistemp, isisrad = processing.process_image(job,working_path)
+        processing.map_ancillary(isistemp, job)
 
 if __name__ == '__main__':
     main()

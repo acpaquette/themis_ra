@@ -1,4 +1,5 @@
 import os
+import glob
 import logging
 import operator as op
 
@@ -9,47 +10,12 @@ import numpy as np
 import plio.utils
 from plio.utils import log
 from plio.utils.utils import check_file_exists
+from plio.io import io_gdal, io_hdf, io_json
+from plio.date import astrodate, julian2ls, julian2season
 
 import pvl
 
-
-def process_header(job):
-    """
-    Given the input image and job instructions, check that the necessary
-    header information is present to process.
-
-    Parameters
-    ----------
-    job : dict
-          Containing the PATH to an images
-
-    Returns
-    -------
-    job : dict
-          With updated, image header specific values
-
-    """
-
-    header = pvl.load(job['images'])
-    bands = find_in_dict(header, 'BAND_BIN_BAND_NUMBER')
-    #bands = header['BAND_BIN_BAND_NUMBER']
-
-    #Extract the instrument name
-    if not 'name' in job.keys() or job['name'] == None:
-        instrument = find_in_dict(header, 'INSTRUMENT_NAME')
-        job['name'] = instrumentmap[instrument]
-
-    #Check that the required bands are present
-    if not checkbandnumbers(bands, job['bands']):
-        logger.error("Image {} contains bands {}.  Band(s) {} must be present.\n".format(i, bands, job['bands']))
-        return
-
-    if 'kerneluri' in job['projection'].keys():
-        kernel = job['projection']['kerneluri']
-    else:
-        kernel = None
-
-    return job
+logger = logging.getLogger(__name__)
 
 
 def enum(*sequential, **named):
@@ -58,6 +24,7 @@ def enum(*sequential, **named):
     """
     enums = dict(zip(sequential, range(len(sequential))), **named)
     return type('Enum', (), enums)
+
 
 def getnearest(iterable, value):
     """
@@ -77,6 +44,7 @@ def getnearest(iterable, value):
           The index into the list
     """
     return min(enumerate(iterable), key=lambda i: abs(i[1] - value))
+
 
 def checkbandnumbers(bands, checkbands):
     """
@@ -101,6 +69,7 @@ def checkbandnumbers(bands, checkbands):
             return False
     return True
 
+
 def checkdeplaid(incidence):
     """
     Given an incidence angle, select the appropriate deplaid method.
@@ -124,6 +93,7 @@ def checkdeplaid(incidence):
     else:
         logger.error("Incidence does not fall between 0 and 180.")
         return False
+
 
 def check_change_by(iterable, by=1, piecewise=False):
     """
@@ -201,6 +171,7 @@ def convert_mean_pressure(elevation):
     """
     return 689.7 * np.exp(-elevation / 10.8)
 
+
 def find_in_dict(obj, key):
     """
     Recursively find an entry in a dictionary
@@ -225,6 +196,7 @@ def find_in_dict(obj, key):
             if item is not None:
                 return item
 
+
 # note that this decorator ignores **kwargs
 def memoize(obj):
     cache = obj.cache = {}
@@ -233,4 +205,153 @@ def memoize(obj):
         if args not in cache:
             cache[args] = obj(*args, **kwargs)
         return cache[args]
-    r
+    return memoizer
+
+
+def extract_ancillary_data(job, temperature,parameters, workingpath, shape, reference_dataset):
+    """
+    For all ancillary data sets, extract the requested spatial extent
+
+    Parameters
+    ----------
+    job : dict
+        Job specification dictionary
+
+    temperature : object
+                Plio GeoDataset object
+
+    parameters : dict
+                of extent and time parameters
+    """
+    ancillarydata = job['ancillarydata']
+    for k, v in ancillarydata.items():
+        ancillarydata[k] = v
+
+    # Flag to punt on the image if some ancillary data load fails.
+    ancillary_failure = False
+
+    #Iterate through the ancillary data.  Clip and resample to the input image
+    for k, v in ancillarydata.items():
+        if isinstance(v, int) or isinstance(v, float):
+            #The user wants a constant value to be used
+            arr = np.empty(shape, dtype=np.float32)
+            logger.debug('{} set to a constant value, {}'.format(k, v))
+            del arr
+        else:
+            basename = os.path.basename(v)
+            root, extension = os.path.splitext(basename)
+            tif = os.path.join(workingpath, root + '.tif')
+
+            if v == 'montone':  # Custom dust opacity
+                startls = parameters['startlsubs'][0]
+                startmartianyear = int(parameters['startmartianyear'][0])
+                files = glob.glob('/scratch/jlaura/KRC/basemaps/tau_geotiff/MY{}*'.format(startmartianyear))
+
+                if len(files) == 0:
+                    logger.error('Requested an image with Mars Year {}.  No Montabone data available for that Mars Year'.format(startmartianyear))
+                    ancillary_failure = True
+                    continue
+                ls = {}
+                for t, f in enumerate(files):
+                    base, ext = os.path.splitext(f)
+                    ls[float(base.split('_')[2])] = t
+                keys = []
+                for key in ls.keys():
+                    try:
+                        keys.append(float(key))
+                    except: pass
+                key = min(keys, key=lambda x: abs(x-startls))
+                v = files[ls[key]]
+
+            if v == 'tes':
+                startls = startlsubs[0]
+                files = glob.glob('/scratch/jlaura/KRC/basemaps/tes_opac/*')
+                ls = {}
+                for t, f in enumerate(files):
+                    base, ext = os.path.splitext(f)
+                    ls[float(base.split('_')[-1][2:])] = t
+                keys = []
+                for key in ls.keys():
+                    try:
+                        keys.append(float(key))
+                    except: pass
+
+                key = min(keys, key=lambda x: abs(x-startls))
+                v = files[ls[key]]
+
+            #Clip and resample the image to the correct resolution
+            v = io_gdal.GeoDataset(v)
+            io_gdal.match_rasters(reference_dataset, v, tif)
+
+            #Read the resampled tif and extract the array
+            ancillarydata[k] = io_gdal.GeoDataset(tif)
+            logger.debug('Dataset {} extract.'.format(v))
+
+    if ancillary_failure:
+        print('FAILED TO EXTRACT ANCILLARY DATA')
+        MPI.COMM_WORLD.Abort(1)
+        sys.exit()
+
+    return ancillarydata
+    
+
+def extract_temperature(isiscube, reference_dataset=None):
+    """
+    Extract the temperature data from the processed ISIS cube.
+
+    Parameters
+    ----------
+    isiscube : str
+               PATH to an ISIS cube to extract
+    """
+    temperature = io_gdal.GeoDataset(isiscube)
+    processing_resolution = temperature.pixel_width
+    tempshape = list(temperature.raster_size)[::-1]
+    logger.info('Themis temperature data has {} lines and {} samples'.format(tempshape[0], tempshape[1]))
+    srs = temperature.spatial_reference.ExportToWkt()
+    logger.info('The input temperature image projection is: {}'.format(srs))
+    return temperature
+
+def extract_metadata(isiscube, parameters):
+    """
+    Given a Davinci processed, level 2 cube, extract the necessary
+    metadata from the header to support clipping supplemental data sets.
+    """
+    header = pvl.load(isiscube)
+
+    ulx = maxlat = find_in_dict(header, 'MaximumLatitude')
+    uly = find_in_dict(header, 'MinimumLongitude')
+    lrx = minlat = find_in_dict(header, 'MinimumLatitude')
+    lry = find_in_dict(header, 'MaximumLongitude')
+    logger.debug('Input TI image LAT range is {} to {}'.format(minlat, maxlat))
+
+    starttime = find_in_dict(header, 'StartTime')
+    stoptime = find_in_dict(header, 'StopTime')
+
+    #Convert UTC to Julian
+    starttime_julian = astrodate.utc2jd(starttime)
+    stoptime_julian = astrodate.utc2jd(stoptime)
+    logger.debug('Input TI image time range is {} to {} (Julian)'.format(starttime_julian, stoptime_julian))
+
+    #LsubS
+    startlsubs, startmartianyear = julian2ls.julian2ls(starttime_julian)
+    stoplsubs, stopmartianyear = julian2ls.julian2ls(stoptime_julian)
+    season, startseason, stopseason = julian2season.j2season(startlsubs)
+
+    logger.debug('Input TI image time range is {} / {} to {} / {} (LsubS)'.format(startlsubs[0],startmartianyear[0],
+                                            stoplsubs[0], stopmartianyear[0]))
+    season = season[0]
+    logger.debug('Season: {}, Start Season: {}, Stop Season {}'.format(season, startseason, stopseason))
+
+    parameters['startseason'] = startseason
+    parameters['stopseason'] = stopseason
+    parameters['season'] = season
+    parameters['startlsubs'] = startlsubs
+    parameters['starttime'] = starttime
+    parameters['stoptime'] = stoptime
+    parameters['startlatitude'] = lrx
+    parameters['stoplatitude'] = ulx
+    parameters['startmartianyear'] = startmartianyear
+    parameters['stopmartianyear'] = stopmartianyear
+
+    return parameters
