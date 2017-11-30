@@ -4,6 +4,7 @@ from plio.utils.utils import find_in_dict
 import pvl
 import pysis
 from pysis import isis
+from pysis.exceptions import ProcessError
 
 
 def preprocess_for_davinci(image, outcube, kernel):
@@ -14,24 +15,30 @@ def preprocess_for_davinci(image, outcube, kernel):
     """
     isis.thm2isis(from_=image, to=outcube)
     if kernel is not None:
-        print(kernel)
         isis.spiceinit(from_=outcube, ck=kernel)
     else:
         isis.spiceinit(from_=outcube)
 
 def postprocess_for_davinci(incube, kernel=None):
-    workingpath, fname = os.path.split(incube)
-    fname = os.path.splitext(fname)[0]
     #Processing the temperature to a level2 image
     if kernel:
-        isis.spiceinit(from_=incube, ck=kernel)
+        try:
+            isis.spiceinit(from_=incube, ck=kernel)
+        except ProcessError as e:
+            print(e.stderr)
     else:
-        isis.spiceinit(from_=incube)
-
+        try:
+            isis.spiceinit(from_=incube)
+        except ProcessError as e:
+            print(e.stderr)
+    workingpath, fname = os.path.split(incube)
+    fname = os.path.splitext(fname)[0]
     isiscube = os.path.join(workingpath, '{}_proj.cub'.format(fname))
-    isis.cam2map(from_=incube, to=isiscube,
+    try:
+        isis.cam2map(from_=incube, to=isiscube,
                  map='$base/templates/maps/simplecylindrical.map')
-
+    except ProcessError as e:
+        print(e.stderr)
     return isiscube
 
 def campt_header(outcube):
