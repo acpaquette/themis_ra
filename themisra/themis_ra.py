@@ -64,7 +64,6 @@ def main():
 
         rock_three = util.generate_rad_image(band_three, 3)
         rock_nine = util.generate_rad_image(band_nine, 9)
-        print('FINISHED!')
 
 if __name__ == '__main__':
     main()
