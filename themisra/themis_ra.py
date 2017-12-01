@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import time
+import pvl
 
 from mpi4py import MPI
 
@@ -12,6 +13,7 @@ from plio.date import astrodate, julian2ls, julian2season
 import plio.utils
 from plio.utils import log
 from plio.utils.utils import check_file_exists, find_in_dict
+import themisra.utils.utils as util
 
 import themisra.processing.processing as processing
 
@@ -56,6 +58,13 @@ def main():
         # DaVinci processing
         isistemp, isisrad = processing.process_image(job,working_path)
         processing.map_ancillary(isistemp, job)
+
+        band_three = util.extract_band(job, isistemp, 3)
+        band_nine = util.extract_band(job, isistemp, 9)
+
+        rock_three = util.generate_rad_image(band_three, 3)
+        rock_nine = util.generate_rad_image(band_nine, 9)
+        print('FINISHED!')
 
 if __name__ == '__main__':
     main()
