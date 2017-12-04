@@ -34,9 +34,6 @@ sys.excepthook = mpi_excepthook
 #log.setup_logging(level=config.LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
-def cost(temp):
-    print()
-
 def main():
     comm = MPI.COMM_WORLD
     rank = comm.rank
