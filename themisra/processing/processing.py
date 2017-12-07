@@ -105,7 +105,7 @@ def preprocess_image(job, workingpath):
     outcube = os.path.join(workingpath, '{}.cub'.format(fname))
     kernel = job.get('kernel', None)
     isiswrapper.preprocess_for_davinci(image, outcube, kernel)
-    
+
     return outcube
 
 
@@ -142,22 +142,22 @@ def process_image(job, workingpath):
     fname, _ = os.path.splitext(fname)
     # path to the image that has been preprocessed for davinci
     dpp_image = os.path.join(workingpath, '{}.cub'.format(fname))
-    
+
     if not check_file_exists(dpp_image):
         MPI.COMM_WORLD.Abort(1)
 
     logger = logging.getLogger(__name__)
     logger.info('Reading image {}'.format(dpp_image))
     # Process the image header
-    
+
     job = process_header(job)
     if job is None:
         MPI.COMM_WORLD.Abort(1)
-    
+
     #Convert to ISIS
     #Read from preprocessed image
     incidence, _, _ = isiswrapper.campt_header(dpp_image)
-    
+
     # Process isomg Davinci
     deplaid = util.checkdeplaid(incidence)
     logger.info("If deplaid is set in the input parameters, using {} deplaid routines".format(deplaid))
@@ -172,18 +172,18 @@ def process_image(job, workingpath):
 
     #Process temperature data using some pipeline
     #try:
-    dvcube = processingpipelines[job['processing_pipeline']](image, workingpath, deplaid, 
-                                                             job['uddw'], job['tesatm'], 
+    dvcube = processingpipelines[job['processing_pipeline']](image, workingpath, deplaid,
+                                                             job['uddw'], job['tesatm'],
                                                              job['rtilt'], job['force'])
     #except:
     #    logger.error("Unknown processing pipeline: {}".format(job['processing_pipeline']))
-    
+
     isistemp = isiswrapper.postprocess_for_davinci(dvcube + '_temp.cub')
-    
+
     isisrad =  isiswrapper.postprocess_for_davinci(dvcube + '_rad.cub')
-    
+
     return isistemp, isisrad
-    
+
 
 def map_ancillary(isiscube, job):
     """
