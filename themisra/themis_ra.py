@@ -28,7 +28,7 @@ def mpi_excepthook(v, t, tb):
     MPI.COMM_WORLD.Abort(1)
 sys.excepthook = mpi_excepthook
 
-    #Setup logging
+#Setup logging
 #log.setup_logging(level=config.LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,7 @@ def main():
         # DaVinci processing
         isistemp, isisrad = processing.process_image(job,working_path)
         processing.map_ancillary(isistemp, job)
+
 
 if __name__ == '__main__':
     main()
