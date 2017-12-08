@@ -12,6 +12,7 @@ from plio.utils import log
 from plio.utils.utils import check_file_exists
 
 import pvl
+import gdal
 
 import themisra.utils.utils as util
 from themisra.wrappers import pipelinewrapper, isiswrapper
@@ -104,7 +105,7 @@ def preprocess_image(job, workingpath):
     outcube = os.path.join(workingpath, '{}.cub'.format(fname))
     kernel = job.get('kernel', None)
     isiswrapper.preprocess_for_davinci(image, outcube, kernel)
-    
+
     return outcube
 
 
@@ -141,22 +142,22 @@ def process_image(job, workingpath):
     fname, _ = os.path.splitext(fname)
     # path to the image that has been preprocessed for davinci
     dpp_image = os.path.join(workingpath, '{}.cub'.format(fname))
-    
+
     if not check_file_exists(dpp_image):
         MPI.COMM_WORLD.Abort(1)
 
     logger = logging.getLogger(__name__)
     logger.info('Reading image {}'.format(dpp_image))
     # Process the image header
-    
+
     job = process_header(job)
     if job is None:
         MPI.COMM_WORLD.Abort(1)
-    
+
     #Convert to ISIS
     #Read from preprocessed image
     incidence, _, _ = isiswrapper.campt_header(dpp_image)
-    
+
     # Process isomg Davinci
     deplaid = util.checkdeplaid(incidence)
     logger.info("If deplaid is set in the input parameters, using {} deplaid routines".format(deplaid))
@@ -171,18 +172,18 @@ def process_image(job, workingpath):
 
     #Process temperature data using some pipeline
     #try:
-    dvcube = processingpipelines[job['processing_pipeline']](image, workingpath, deplaid, 
-                                                             job['uddw'], job['tesatm'], 
+    dvcube = processingpipelines[job['processing_pipeline']](image, workingpath, deplaid,
+                                                             job['uddw'], job['tesatm'],
                                                              job['rtilt'], job['force'])
     #except:
     #    logger.error("Unknown processing pipeline: {}".format(job['processing_pipeline']))
-    
+
     isistemp = isiswrapper.postprocess_for_davinci(dvcube + '_temp.cub')
-    
+
     isisrad =  isiswrapper.postprocess_for_davinci(dvcube + '_rad.cub')
-    
+
     return isistemp, isisrad
-    
+
 
 def map_ancillary(isiscube, job):
     """
@@ -202,7 +203,6 @@ def map_ancillary(isiscube, job):
           With updated values of ancillary data
 
     """
-
     comm = MPI.COMM_WORLD
     rank = comm.rank
     basepath, _ = os.path.split(isiscube)
@@ -215,35 +215,34 @@ def map_ancillary(isiscube, job):
             logger.error('Failed to extract temperature data.')
             MPI.COMM_WORLD.Abort(1)
 
-        if "reference" not in job.keys():
+        if job['latlon'] is None:
             shape =  list(temperature.raster_size)[::-1]
             reference_dataset = temperature
             reference_name = "temperature"
         else:
-            in_ref = job["ancillarydata"][job["reference"]]
+            isiscube_geodata = io_gdal.GeoDataset(isiscube)
+            lry, uly, ulx, lrx = job["latlon"]
+            ul_coords = isiscube_geodata.latlon_to_pixel(uly, ulx)
+            lr_coords = isiscube_geodata.latlon_to_pixel(lry, lrx)
+            xoff = ul_coords[0]
+            yoff = ul_coords[1]
+            width = abs(lr_coords[0] - xoff)
+            height = abs(lr_coords[1] - yoff)
+            resample = os.path.join("/home/acpaquette/" + 'resampled.tif')
 
-            # Resample the input reference to the requested resolution
-            if "reference_resolution" in job.keys():
-                out_ref = os.path.join(workingpath, os.path.splitext(in_ref)[0] + 'resampled.tif')
-                xres, yres = job["reference_resolution"]
-                opts = gdal.TranslateOptions(xRes=xres, yRes=yres)
-                gdal.Translate(out_ref, in_ref, options=opts)
-                in_ref = out_ref
+            opts = gdal.TranslateOptions(srcWin=[xoff, yoff, width, height])
+            gdal.Translate(resample, isiscube, options=opts)
 
-            reference_dataset = io_gdal.GeoDataset(in_ref)
-            reference_name = job["reference"]
-            # Get the temperature set to the correct size as well as spatial resolution.
-            shape = list(reference_dataset.raster_size)[::-1]
-            lower, upper = reference_dataset.latlon_extent
-            # Update the start and stop latitudes
+            resample_geodata  = io_gdal.GeoDataset(resample)
+            shape = list(resample_geodata.raster_size)[::-1]
+            lower, upper = resample_geodata.latlon_extent
+
             parameters['startlatitude'] = lower[0]
             parameters['stoplatitude'] = upper[0]
-            clipped = os.path.join(workingpath, os.path.splitext(isiscube)[0] + '_clipped.tif')
-            io_gdal.match_rasters(reference_dataset, temperature, clipped,
-                                  ndv=temperature.no_data_value)
-            temperature = util.extract_temperature(clipped)
 
+            temperature = util.extract_temperature(resample)
+            reference_dataset = resample_geodata
+            
         # Extract the ancillary data
-        ancillary_data = util.extract_ancillary_data(job, temperature, parameters, workingpath, shape, reference_dataset)
-
+        ancillary_data = extract_ancillary_data(job, temperature, parameters, workingpath, shape, reference_dataset)
         return ancillary_data
