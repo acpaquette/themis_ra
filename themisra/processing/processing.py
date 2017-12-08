@@ -9,6 +9,7 @@ import numpy as np
 
 import plio.utils
 from plio.utils import log
+from plio.io import io_gdal
 from plio.utils.utils import check_file_exists
 
 import pvl
@@ -215,7 +216,7 @@ def map_ancillary(isiscube, job):
             logger.error('Failed to extract temperature data.')
             MPI.COMM_WORLD.Abort(1)
 
-        if job['latlon'] is None:
+        if len(job['latlon']) is 0:
             shape =  list(temperature.raster_size)[::-1]
             reference_dataset = temperature
             reference_name = "temperature"
@@ -242,7 +243,7 @@ def map_ancillary(isiscube, job):
 
             temperature = util.extract_temperature(resample)
             reference_dataset = resample_geodata
-            
+
         # Extract the ancillary data
-        ancillary_data = extract_ancillary_data(job, temperature, parameters, workingpath, shape, reference_dataset)
+        ancillary_data = util.extract_ancillary_data(job, temperature, parameters, workingpath, shape, reference_dataset)
         return ancillary_data

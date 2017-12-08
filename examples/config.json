@@ -2,7 +2,6 @@
     "outpath": "/usgs/shareall/arsanders/themis_temp",
     "images": "/pds_san/PDS_Safed/Mars_Odyssey/THEMIS_V01/data/odtir0_xxxx/i262xxrdr/I26201019RDR.QUB",
     "processing_pipeline": "themis_davinci",
-    "resolution": [],
     "force": true,
     "deplaid": false,
     "workingdir": "/usgs/shareall/arsanders/themis_temp",
