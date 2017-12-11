@@ -6,6 +6,7 @@ import sys
 from mpi4py import MPI
 
 import numpy as np
+from scipy.optimize import differential_evolution
 
 import plio.utils
 from plio.utils import log
@@ -241,3 +242,40 @@ def map_ancillary(isiscube, job):
         # Extract the ancillary data
         ancillary_data = util.extract_ancillary_data(job, temperature, parameters, workingpath, shape, reference_dataset)
         return ancillary_data
+
+
+def optimize_pixel(obs3, obs9, rock3, rock9):
+    """Find the optimal value for a single pixel using differential evolution 
+         technique.
+
+    Parameters
+    ----------
+    
+    obs3:       float
+                The value for this pixel that was observed in band 3 of the 
+                  input image.
+
+    obs9:       float
+                The value for this pixel that was observed in band 9 of the 
+                  input image.
+
+    rock3:      float
+                The expected value for rock in band 3.
+
+    rock9:      float
+                The expected value for rock in band 9.
+
+    Returns
+    -------
+    res:        list
+                alpha, fine3, fine9
+
+    """
+    bounds = [(0,1), #alpha
+              (160,250), #Fine3
+              (160,250)] #Fine9
+    res = differential_evolution(util.cost_func, bounds,
+                                 args=(obs3, obs9, rock3,rock9),
+                                 strategy='best1bin')
+    alpha, fine3, fine9 = res['x']
+    print(alpha*100, (1-alpha)*100, fine3, fine9, res['fun'])
