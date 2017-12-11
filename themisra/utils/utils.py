@@ -495,7 +495,8 @@ def extract_latlon_transform(isiscube, job):
                Height of the new area
     """
     isiscube_geodata = io_gdal.GeoDataset(isiscube)
-    lry, uly, ulx, lrx = job["latlon"]
+    lry, uly = job["lat_extent"]
+    ulx, lrx = job["lon_extent"]
 
     ul_coords = isiscube_geodata.latlon_to_pixel(uly, ulx)
     lr_coords = isiscube_geodata.latlon_to_pixel(lry, lrx)

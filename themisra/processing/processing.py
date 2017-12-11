@@ -218,7 +218,7 @@ def map_ancillary(isiscube, job):
             logger.error('Failed to extract temperature data.')
             MPI.COMM_WORLD.Abort(1)
 
-        if len(job['latlon']) is 0:
+        if len(job['lat_extent']) < 2 or len(job['lat_extent'])  < 2:
             shape =  list(temperature.raster_size)[::-1]
             reference_dataset = temperature
             reference_name = "temperature"
@@ -245,18 +245,18 @@ def map_ancillary(isiscube, job):
 
 
 def optimize_pixel(obs3, obs9, rock3, rock9):
-    """Find the optimal value for a single pixel using differential evolution 
+    """Find the optimal value for a single pixel using differential evolution
          technique.
 
     Parameters
     ----------
-    
+
     obs3:       float
-                The value for this pixel that was observed in band 3 of the 
+                The value for this pixel that was observed in band 3 of the
                   input image.
 
     obs9:       float
-                The value for this pixel that was observed in band 9 of the 
+                The value for this pixel that was observed in band 9 of the
                   input image.
 
     rock3:      float

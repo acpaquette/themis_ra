@@ -17,5 +17,6 @@
         "elevation": "/scratch/rfergason/ti_algorithm/input_final/elevation_MOLA_HRSC/Mars_MOLA_blend200ppx_HRSC_DEM_clon0dd_200mpp_lzw.tif",
         "slopeazimuth": "/scratch/rfergason/ti_algorithm/input_data/MOLA_HRSC/Mars_MOLA_blend200ppx_HRSC_Aspect_clon0dd_200mpp.cub"},
     "bands": [9, 10],
-    "latlon": [18.44, 18.46, 77.39, 77.46],
+    "lat_extent": [18.44, 18.46],
+    "lon_extent": [77.39, 77.46], 
 "lookuptables": "/scratch/jlaura/krc_lookup344.h5"}
