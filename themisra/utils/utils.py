@@ -293,7 +293,7 @@ def extract_ancillary_data(job, temperature,parameters, workingpath, shape, refe
         sys.exit()
 
     return ancillarydata
-    
+
 
 def extract_temperature(isiscube, reference_dataset=None):
     """
@@ -355,3 +355,17 @@ def extract_metadata(isiscube, parameters):
     parameters['stopmartianyear'] = stopmartianyear
 
     return parameters
+
+def extract_latlon_transform(isiscube, job):
+    isiscube_geodata = io_gdal.GeoDataset(isiscube)
+    lry, uly, ulx, lrx = job["latlon"]
+
+    ul_coords = isiscube_geodata.latlon_to_pixel(uly, ulx)
+    lr_coords = isiscube_geodata.latlon_to_pixel(lry, lrx)
+
+    xoff = ul_coords[0]
+    yoff = ul_coords[1]
+    
+    width = abs(lr_coords[0] - xoff)
+    height = abs(lr_coords[1] - yoff)
+    return xoff, yoff, width, height

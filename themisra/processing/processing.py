@@ -206,7 +206,8 @@ def map_ancillary(isiscube, job):
     """
     comm = MPI.COMM_WORLD
     rank = comm.rank
-    basepath, _ = os.path.split(isiscube)
+    basepath, fname = os.path.split(isiscube)
+    fname, _ = os.path.splitext(fname)
     workingpath = basepath
     parameters = util.extract_metadata(isiscube, dict())
 
@@ -221,15 +222,8 @@ def map_ancillary(isiscube, job):
             reference_dataset = temperature
             reference_name = "temperature"
         else:
-            isiscube_geodata = io_gdal.GeoDataset(isiscube)
-            lry, uly, ulx, lrx = job["latlon"]
-            ul_coords = isiscube_geodata.latlon_to_pixel(uly, ulx)
-            lr_coords = isiscube_geodata.latlon_to_pixel(lry, lrx)
-            xoff = ul_coords[0]
-            yoff = ul_coords[1]
-            width = abs(lr_coords[0] - xoff)
-            height = abs(lr_coords[1] - yoff)
-            resample = os.path.join("/home/acpaquette/" + 'resampled.tif')
+            xoff, yoff, width, height = util.extract_latlon_transform(isiscube, job)
+            resample = os.path.join(basepath, fname + '_resampled.tif')
 
             opts = gdal.TranslateOptions(srcWin=[xoff, yoff, width, height])
             gdal.Translate(resample, isiscube, options=opts)
