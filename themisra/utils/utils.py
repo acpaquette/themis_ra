@@ -356,6 +356,51 @@ def extract_metadata(isiscube, parameters):
 
     return parameters
 
+
+def cost_func(variables, obs3, obs9, rock3, rock9):
+    """ Basic cost function used in differential evolution technique to find the
+        correct balance between fine component and rock.
+    Parameters
+    ----------
+    variables: list of tuples
+               A list of values that indicate bounds for alpha, fine3, and fine9
+
+    obs3:      float
+               The floating point value representing the observed value of a 
+                 pixel from the third band of an input image.
+          
+    obs9:      float
+               The floating point value representing the observed value of a 
+                 pixel from the ninth band of an input image.
+
+    rock3:     float
+               The expected value of rock in band 3.
+
+    rock9:     float
+               The expected value of rock in band 9.
+    
+    Returns
+    -------
+    z:         float
+               The cost of the current configuration as described by the 
+                 mathematical cost function.
+    """
+
+    alpha = variables[0]
+    fine3 = variables[1]
+    fine9 = variables[2]
+
+    if fine9 < fine3:
+        return 1e10
+
+    delta_obs = abs(obs3-obs9)
+    delta_rock = abs(rock3 - rock9)
+    delta_fine = abs(fine3 - fine9)
+
+    z = abs((delta_rock * alpha + delta_fine * (1-alpha)) - delta_obs)
+    
+    return z
+
 def generate_rad_image(temp_image, band_num):
     """
     """
@@ -395,3 +440,4 @@ def extract_band(job, image, band_num):
         if band_num == band:
             geo_image = io_gdal.GeoDataset(image)
             return geo_image.read_array(band = i + 1)
+

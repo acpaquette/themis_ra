@@ -30,7 +30,7 @@ def mpi_excepthook(v, t, tb):
     MPI.COMM_WORLD.Abort(1)
 sys.excepthook = mpi_excepthook
 
-    #Setup logging
+#Setup logging
 #log.setup_logging(level=config.LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
@@ -56,11 +56,13 @@ def main():
         isistemp, isisrad = processing.process_image(job,working_path)
         processing.map_ancillary(isistemp, job)
 
+
         band_three = util.extract_band(job, isistemp, 3)
         band_nine = util.extract_band(job, isistemp, 9)
 
         rock_three = util.generate_rad_image(band_three, 3)
         rock_nine = util.generate_rad_image(band_nine, 9)
+
 
 if __name__ == '__main__':
     main()
