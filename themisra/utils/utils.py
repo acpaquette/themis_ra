@@ -356,6 +356,46 @@ def extract_metadata(isiscube, parameters):
 
     return parameters
 
+def generate_rad_image(temp_image, band_num):
+    """
+    """
+    band_values = {
+    "1": 0.000173866,
+    "2": 0.000173866,
+    "3": 0.000266925,
+    "4": 0.000310375,
+    "5": 0.000352625,
+    "6": 0.000382479,
+    "7": 0.000396245,
+    "8": 0.000398744,
+    "9": 0.000393225,
+    "10": 0.000348427}
+
+    if int is type(band_num):
+        band_num = str(band_num)
+
+    radiance_value = band_values[band_num]
+    rad_image = np.full(temp_image.shape, radiance_value)
+    return rad_image
+
+def extract_band(job, image, band_num):
+    """
+    Extract the temperature data from the processed ISIS cube.
+
+    Parameters
+    ----------
+
+    Returns
+    ----------
+    """
+    header = pvl.load(job['images'])
+    bands = find_in_dict(header, 'BAND_BIN_BAND_NUMBER')
+
+    for i, band in enumerate(bands):
+        if band_num == band:
+            geo_image = io_gdal.GeoDataset(image)
+            return geo_image.read_array(band = i + 1)
+
 def extract_latlon_transform(isiscube, job):
     isiscube_geodata = io_gdal.GeoDataset(isiscube)
     lry, uly, ulx, lrx = job["latlon"]
@@ -365,7 +405,7 @@ def extract_latlon_transform(isiscube, job):
 
     xoff = ul_coords[0]
     yoff = ul_coords[1]
-    
+
     width = abs(lr_coords[0] - xoff)
     height = abs(lr_coords[1] - yoff)
     return xoff, yoff, width, height
